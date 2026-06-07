@@ -155,6 +155,7 @@ DIRECTIONS: Choose the correct word to complete each sentence.
 - 正确答案必须唯一确定（每个第一句只对应一个第二句）
 - 干扰项 = 本轮**其余目标词的第二句**；若本轮目标词不足，从全词表补充
 - 把所有第二句（正确项 + 干扰项）打乱后统一列为 a / b / c… 选项
+- **答案顺序必须与题号错位**：打乱字母选项时，确保第 N 题的正确答案**不是**第 N 个字母选项（即**禁止**出现 1→a、2→b、3→c… 的顺序对应，否则答案太明显）。理想情况下让**每一题**的题号都与其正确字母不一致（错位排列 / derangement）；至少保证不是整体顺序对应
 
 **输出格式**：
 ```
@@ -162,11 +163,11 @@ DIRECTIONS: Choose the correct word to complete each sentence.
 DIRECTIONS: Match each sentence starter with the correct ending.
 （第一句描述词义；第二句含被考词，斜体）
 
-选项（endings — 每项含一个目标词）：
-a. they *explore* space.
-b. it is an *asteroid*.
-c. it is very *mysterious*.
-d. he is an *astronomer*.
+选项（endings — 每项含一个目标词；已打乱，字母顺序故意与题号不对应）：
+a. it is very *mysterious*.
+b. he is an *astronomer*.
+c. they *explore* space.
+d. it is an *asteroid*.
 ...
 
 1. Astronauts travel to new places to learn about them; ____
@@ -174,6 +175,7 @@ d. he is an *astronomer*.
 3. Nobody can explain where the object came from; ____
 4. He studies stars and planets for a living; ____
 ...
+（正确对应：1→c、2→d、3→a、4→b —— 仅作内部说明，实际出题时不展示）
 ```
 
 ---
@@ -212,7 +214,7 @@ d. he is an *astronomer*.
 ```
 本轮结果：
 ✅ explore（探索）        Type 1 ✓ | Type 2 ✓ → 已掌握
-❌ asteroid（小行星）     Type 1 ✓ | Type 2 ✗（正确答案：b）→ 进入错词库
+❌ asteroid（小行星）     Type 1 ✓ | Type 2 ✗（正确答案：d）→ 进入错词库
 ✅ mysterious（神秘的）   Type 1 ✓ | Type 2 ✓ → 已掌握
 ❌ astronomer（天文学家） Type 1 ✗（正确答案：C）| Type 2 ✓ → 进入错词库
 ...
