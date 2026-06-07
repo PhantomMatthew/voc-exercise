@@ -126,16 +126,16 @@ metadata:
 DIRECTIONS: Choose the correct word to complete each sentence.
 
 1. He dreamt of being an astronaut, so he could ________ space.
-   A. explore        B. increase
-   C. pass           D. compete
+   A. explore
+   B. increase
+   C. pass
+   D. compete
 
 2. In 2134, Halley's Comet will ________ very close to Earth.
-   A. sink           B. pass
-   C. strike         D. grow
-
-3. That spaceship can fly faster than the ________ of sound.
-   A. direction      B. speed
-   C. heat           D. level
+   A. sink
+   B. pass
+   C. strike
+   D. grow
 ...
 ```
 
