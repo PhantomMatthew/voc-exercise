@@ -155,19 +155,27 @@ DIRECTIONS: Choose the correct word to complete each sentence.
   - 通常 10 词一轮 → 10 条释义 ↔ 10 个单词选项（一一配对）
   - 干扰词 = 本轮其余目标词；若本轮目标词不足 4 个，从全词表补充单词凑足选项
 - 正确答案必须唯一确定（每条释义只对应一个单词）
-- 把所有单词选项打乱后统一列为 a / b / c… 选项
-- **答案顺序必须与题号错位**：打乱字母选项时，确保第 N 题的正确答案**不是**第 N 个字母选项（即**禁止**出现 1→a、2→b、3→c… 的顺序对应，否则答案太明显）。理想情况下让**每一题**的题号都与其正确字母不一致（错位排列 / derangement）；至少保证不是整体顺序对应
+- 字母选项的**排列顺序**必须按下方【答案排列算法】**确定性生成**，确保答案与题号错开
+
+**答案排列算法（必须确定性执行，禁止「随机打乱」）**：
+
+> ⚠️ 仅凭「随机打乱」会反复退化成 1→a、2→b… 的同序（模型无法真正随机）。**必须**按下列步骤机械执行：
+
+1. **题干顺序**：编号释义按本轮**词表 / 抽词顺序**排列（第 1 题 = 第 1 个目标词的释义，依此类推）。
+2. **选项顺序**：把全部单词选项按**字母表 A→Z 排序**后，再依次分配 a / b / c…（题干走词表序、选项走字母序，两者天然错开，绝不会整体同序）。
+3. **强制自检（消除同位）**：逐题检查「第 N 题的正确单词是否恰好是第 N 个字母选项」；若有任一同位，将该单词与**相邻**选项互换并重新编字母，重复直到**没有任何一题**的题号等于其答案字母位置。
+4. 仅当自检通过（零同位）后才输出题目。
 
 **输出格式**：
 ```
 题型二：释义配对题
 DIRECTIONS: Match each definition with the correct word.
 
-选项（words — 已打乱，字母顺序故意与题号不对应）：
-a. mysterious
+选项（words — 按字母表 A→Z 排序）：
+a. asteroid
 b. astronomer
 c. explore
-d. asteroid
+d. mysterious
 ...
 
 1. to travel through an unfamiliar place in order to learn about it
@@ -175,7 +183,7 @@ d. asteroid
 3. very hard to understand or explain; full of secrets
 4. a scientist who studies stars, planets, and space
 ...
-（正确对应：1→c、2→d、3→a、4→b —— 仅作内部说明，实际出题时不展示）
+（正确对应：1→c、2→a、3→d、4→b —— 题干按词表序、选项按字母序，故与题号错开；仅内部说明，实际不展示）
 ```
 
 ---
@@ -214,7 +222,7 @@ d. asteroid
 ```
 本轮结果：
 ✅ explore（探索）        Type 1 ✓ | Type 2 ✓ → 已掌握
-❌ asteroid（小行星）     Type 1 ✓ | Type 2 ✗（正确答案：d）→ 进入错词库
+❌ asteroid（小行星）     Type 1 ✓ | Type 2 ✗（正确答案：a）→ 进入错词库
 ✅ mysterious（神秘的）   Type 1 ✓ | Type 2 ✓ → 已掌握
 ❌ astronomer（天文学家） Type 1 ✗（正确答案：C）| Type 2 ✓ → 进入错词库
 ...
@@ -230,7 +238,7 @@ d. asteroid
 2. Read `vocabulary/all_words.md` → 解析词表
 3. 抽词：cursor=0, wrong_bank 空 → 取前 10 词 `[mystery, mysterious, astronomer, asteroid, interstellar, speed, direction, increase, decrease, alien]`
 4. 生成 **Type 1**：10 道选择题（4 选 1）
-5. 生成 **Type 2**：10 条英文释义（题干）+ 10 个英文单词选项（打乱、与题号错位）
+5. 生成 **Type 2**：10 条英文释义（题干，词表序）+ 10 个英文单词选项（字母 A→Z 序，自检与题号错位）
 6. 将 `pending` 写入 state.json
 7. 输出两套题，提示用户作答
 
