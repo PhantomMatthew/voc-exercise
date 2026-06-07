@@ -19,11 +19,11 @@ A standalone skill package for vocabulary exercise training (VOC Exercise). Not 
 - The skill uses only **built-in Read / Write / Edit** tools — no MCP dependency.
 - **Two question types** must be generated every round:
   - **Type 1**: Multiple-choice questions (4 options: A/B/C/D) using target words
-  - **Type 2**: Match sentence starters with correct endings
+  - **Type 2**: Match English definitions (numbered stems) with the correct target words (lettered options)
 - **Daily word count**: 10 words per round. Day 1 = 10 new words; Day 2+ = 3 from wrong bank + 7 new words.
 - A word is considered **mastered** only when it is answered correctly in BOTH question types.
 - Distractors for Type 1 must use **target words from the current round** (supplemented from the full word list if needed).
-- Distractors for Type 2 must use **target words from the current round** (shown in italics as options).
+- Type 2 stems are **English definitions** of the target words (no Chinese, and the word itself must not appear in its own definition). Options are the **target words themselves** (plain words), drawn from the current round and supplemented from the full word list only if there are too few to choose from.
 
 ## Editing SKILL.md
 

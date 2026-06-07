@@ -1,6 +1,6 @@
 ---
 name: voc-exercise
-description: "词汇选择题与配对训练器。从一个合并词表中按序抽 10 词，生成选择题（Type 1）和句子配对题（Type 2），自动维护错词库与已掌握库。"
+description: "词汇选择题与配对训练器。从一个合并词表中按序抽 10 词，生成选择题（Type 1）和释义配对题（Type 2），自动维护错词库与已掌握库。"
 trigger: voc
 keywords:
   - voc
@@ -26,7 +26,7 @@ metadata:
 4. 按规则抽词、生成两种题型
 5. 收集用户答案后，更新状态文件
 6. **禁止**跳过状态读写——所有进度必须持久化
-7. **禁止**在出题阶段显示任何中文释义——中文意思**只能**在回执（给出答案）时出现，出题时显示释义视为泄题
+7. **禁止**在出题阶段显示任何**中文**释义——中文意思**只能**在回执（给出答案）时出现；出题时显示**中文**释义视为泄题（注：题型二的**英文**释义题干属正常出题内容，不受此限）
 
 ---
 
@@ -142,38 +142,38 @@ DIRECTIONS: Choose the correct word to complete each sentence.
 
 ---
 
-## 题型二：句子配对题（Type 2 — Match Sentence Starters with Endings）
+## 题型二：释义配对题（Type 2 — Match Definitions with Words）
 
-**格式**：每道题是**两句配对**。**第一句**（编号项）用英文**描述或解释**某个目标词的含义，但**句中不出现该词**；**第二句**（字母选项）是一个**含有该目标词的短句**，目标词**斜体**标注。用户把每个第一句连到正确的第二句。
+**格式**：每道题（编号项）是一条**英文释义**，描述某个目标词的含义；上方先给出一组**英文单词**（字母选项）。用户把每条释义连到正确的单词。
 
 **规则**：
-- 每个目标词生成 **1 组配对（两句）**：
-  - **第二句（字母选项 / ending）**：含该目标词的自然短句，目标词用斜体 `*word*` 标注 —— **这是被考点**
-  - **第一句（编号项 / starter）**：用英文描述 / 解释该词的含义或使用情境，**不得出现该目标词本身**
-- 被考目标词**永远在第二句**，绝不出现在第一句
-- 第一句尽量基于词表的释义 / 例句改编，使描述准确指向**唯一**的目标词
-- 正确答案必须唯一确定（每个第一句只对应一个第二句）
-- 干扰项 = 本轮**其余目标词的第二句**；若本轮目标词不足，从全词表补充
-- 把所有第二句（正确项 + 干扰项）打乱后统一列为 a / b / c… 选项
+- 每个目标词生成 **1 条英文释义**（编号项 / 题干）：
+  - 用**英文**准确描述该词含义，使其**唯一**指向某个目标词
+  - 释义中**不得出现该目标词本身**（及其明显同根 / 派生形式），否则视为泄题
+  - 释义可参考词表 `Meaning`（中文）/ `Example` 改写为英文，但**只输出英文，不得出现中文**
+- 选项（字母选项）= **英文单词**（即目标词本身，纯单词、非句子、不加斜体）：
+  - 通常 10 词一轮 → 10 条释义 ↔ 10 个单词选项（一一配对）
+  - 干扰词 = 本轮其余目标词；若本轮目标词不足 4 个，从全词表补充单词凑足选项
+- 正确答案必须唯一确定（每条释义只对应一个单词）
+- 把所有单词选项打乱后统一列为 a / b / c… 选项
 - **答案顺序必须与题号错位**：打乱字母选项时，确保第 N 题的正确答案**不是**第 N 个字母选项（即**禁止**出现 1→a、2→b、3→c… 的顺序对应，否则答案太明显）。理想情况下让**每一题**的题号都与其正确字母不一致（错位排列 / derangement）；至少保证不是整体顺序对应
 
 **输出格式**：
 ```
-题型二：句子配对题
-DIRECTIONS: Match each sentence starter with the correct ending.
-（第一句描述词义；第二句含被考词，斜体）
+题型二：释义配对题
+DIRECTIONS: Match each definition with the correct word.
 
-选项（endings — 每项含一个目标词；已打乱，字母顺序故意与题号不对应）：
-a. it is very *mysterious*.
-b. he is an *astronomer*.
-c. they *explore* space.
-d. it is an *asteroid*.
+选项（words — 已打乱，字母顺序故意与题号不对应）：
+a. mysterious
+b. astronomer
+c. explore
+d. asteroid
 ...
 
-1. Astronauts travel to new places to learn about them; ____
-2. A small rocky object is orbiting the Sun; ____
-3. Nobody can explain where the object came from; ____
-4. He studies stars and planets for a living; ____
+1. to travel through an unfamiliar place in order to learn about it
+2. a small rocky object that orbits the Sun
+3. very hard to understand or explain; full of secrets
+4. a scientist who studies stars, planets, and space
 ...
 （正确对应：1→c、2→d、3→a、4→b —— 仅作内部说明，实际出题时不展示）
 ```
@@ -230,7 +230,7 @@ d. it is an *asteroid*.
 2. Read `vocabulary/all_words.md` → 解析词表
 3. 抽词：cursor=0, wrong_bank 空 → 取前 10 词 `[mystery, mysterious, astronomer, asteroid, interstellar, speed, direction, increase, decrease, alien]`
 4. 生成 **Type 1**：10 道选择题（4 选 1）
-5. 生成 **Type 2**：10 组句子配对（第一句释义 + 第二句含被考目标词，斜体），10 个选项（含干扰）
+5. 生成 **Type 2**：10 条英文释义（题干）+ 10 个英文单词选项（打乱、与题号错位）
 6. 将 `pending` 写入 state.json
 7. 输出两套题，提示用户作答
 
