@@ -1,11 +1,10 @@
 ---
 name: voc-exercise
-description: "词汇填空与配对训练器。按 unit 顺序抽 10 词，生成填空题（Type 1）和句子配对题（Type 2），自动维护错词库与已掌握库。"
+description: "词汇选择题与配对训练器。从一个合并词表中按序抽 10 词，生成选择题（Type 1）和句子配对题（Type 2），自动维护错词库与已掌握库。"
 trigger: voc
 keywords:
   - voc
   - 词汇
-  - voc train
   - voc status
   - voc reset
   - 词汇训练
@@ -21,8 +20,8 @@ metadata:
 
 **当用户触发 `voc` 相关命令时，你必须：**
 
-1. 解析子命令（train / status / reset）和 unit 号
-2. 读取词表文件 `vocabulary/units/Unit_<N>.md`
+1. 解析子命令（无子命令即开始训练 / status / reset）
+2. 读取词表文件 `vocabulary/all_words.md`
 3. 读取/初始化状态文件 `~/.openclaw/state/voc-exercise/state.json`
 4. 按规则抽词、生成两种题型
 5. 收集用户答案后，更新状态文件
@@ -32,14 +31,14 @@ metadata:
 
 ## 子命令
 
-### `voc train <unit>`
-开始训练指定 unit。例：`voc train 1`
+### `voc`
+开始训练。直接输入 `voc` 即可，从合并词表中按序抽词。
 
-### `voc status [unit]`
-查看整体或指定 unit 的进度（已掌握数 / 错词库数 / 剩余新词数）。
+### `voc status`
+查看整体进度（已掌握数 / 错词库数 / 剩余新词数 / 总词数）。
 
-### `voc reset <unit>`
-清空指定 unit 的状态（需用户二次确认）。
+### `voc reset`
+清空全部状态（需用户二次确认）。
 
 ### `voc answer <答案序列>`
 提交本轮答案。格式见下方答题说明。
@@ -48,7 +47,7 @@ metadata:
 
 ## 词表数据源
 
-**路径**：`vocabulary/units/Unit_<N>.md`（N = 1..5）
+**路径**：`vocabulary/all_words.md`（单一合并文件，共 241 词）
 
 **格式**：Markdown 表格
 
@@ -73,63 +72,70 @@ metadata:
 **Schema**：
 ```json
 {
-  "version": 1,
-  "units": {
-    "1": {
-      "cursor": 0,
-      "mastered": ["mystery", "speed"],
-      "wrong_bank": {
-        "alien": { "consecutive_correct": 0, "last_attempt": "2026-06-06T10:00:00+08:00" }
-      },
-      "pending": {
-        "words": ["explore", "speed", "pass", "alien", "increase", "object", "star", "direction", "technology", "astronomer"],
-        "questions": { /* 见下方结构 */ },
-        "issued_at": "2026-06-06T10:00:00+08:00"
-      }
-    }
+  "version": 2,
+  "cursor": 0,
+  "mastered": ["mystery", "speed"],
+  "wrong_bank": {
+    "alien": { "consecutive_correct": 0, "last_attempt": "2026-06-06T10:00:00+08:00" }
+  },
+  "pending": {
+    "words": ["explore", "speed", "pass", "alien", "increase", "object", "star", "direction", "technology", "astronomer"],
+    "questions": {  },
+    "issued_at": "2026-06-06T10:00:00+08:00"
   }
 }
 ```
 
-**读写**：使用内置 Read / Write / Edit 工具。文件不存在时初始化为 `{"version":1,"units":{}}`。
+**读写**：使用内置 Read / Write / Edit 工具。文件不存在时初始化为 `{"version":2,"cursor":0,"mastered":[],"wrong_bank":{}}`。
+
+**迁移说明**：v1 → v2 将 `units` 字典展平为顶层字段，所有 unit 合并到一个词池。若检测到 v1 格式，提示用户运行 `voc reset`。
 
 ---
 
 ## 抽词算法（每轮 = 10 词）
 
-### Day 1（或该 unit 首次训练）：
-1. 读取该 unit 状态。
-2. 若 `wrong_bank` 为空且 `cursor = 0`：从词表开头取 10 个新词，跳过已在 `mastered` 中的词。
+### 首次训练（cursor = 0 且 wrong_bank 为空）：
+1. 读取状态。
+2. 从词表开头取 10 个新词，跳过已在 `mastered` 中的词。
 3. 将本轮 10 个词及生成的题目写入 `pending`。
 
-### Day 2+（已有 wrong_bank）：
-1. 读取该 unit 状态。
+### 后续训练（wrong_bank 非空 或 cursor > 0）：
+1. 读取状态。
 2. **优先**从 `wrong_bank` 中按加入时间最早顺序（`last_attempt` 升序）取词，最多 **3 个**。
 3. 从 `cursor` 开始向后取新词，跳过已在 `mastered` / `wrong_bank` 的词，补足至 **10 个**（即 3 复习 + 7 新词）。
 4. 若 `wrong_bank` 不足 3 个：全部取出，剩余用新词补足。
-5. 若该 unit 词表已耗尽且 `wrong_bank` 为空：返回「该 unit 已全部掌握」。
+5. 若词表已耗尽且 `wrong_bank` 为空：返回「所有词汇已全部掌握」。
 
 ---
 
-## 题型一：填空题（Type 1 — Fill in the Blank）
+## 题型一：选择题（Type 1 — Multiple Choice）
 
-**格式**：每道题给一个英文句子，句子中有一个空格，空格前用斜体列出**当前轮次的目标词**作为选项。
+**格式**：每道题给一个英文句子（含空格），下方列出 **4 个选项**（A/B/C/D），用户选择正确答案。
 
 **规则**：
-- 每个目标词生成 **1 道填空题**
+- 每个目标词生成 **1 道选择题**
+- 每题 **4 个选项**：1 个正确答案 + 3 个干扰项
+- 干扰项优先从**当前轮次的其他目标词**中选取；若不足 3 个，从词表中其他词补充
 - 句子应尽量基于词表中的例句改编
-- 空格前显示 `*explore, pass, speed*`（当前轮次所有目标词），用户从中选择填入
+- 选项顺序随机排列
 - 正确答案为该题对应的目标词
-- 干扰项为当前轮的其他目标词（无需额外构造，所有目标词都列在选项中）
 
 **输出格式**：
 ```
-题型一：填空题
-DIRECTIONS: Complete each sentence with the correct word from '*explore, pass, speed, alien, increase, object, star, direction, technology, astronomer*'.
+题型一：选择题
+DIRECTIONS: Choose the correct word to complete each sentence.
 
-1. He dreamt of being an astronaut, so he could ____________________ space.
-2. In 2134, Halley's Comet will ____________________ very close to Earth.
-3. That spaceship can fly faster than the ____________________ of sound.
+1. He dreamt of being an astronaut, so he could ________ space.
+   A. explore        B. increase
+   C. pass           D. compete
+
+2. In 2134, Halley's Comet will ________ very close to Earth.
+   A. sink           B. pass
+   C. strike         D. grow
+
+3. That spaceship can fly faster than the ________ of sound.
+   A. direction      B. speed
+   C. heat           D. level
 ...
 ```
 
@@ -193,16 +199,16 @@ j. the results were surprising.
 ### 清空 pending 并写回状态文件。
 
 ### 回执
-向用户报告：本轮每词正误（分 Type 1 / Type 2）、新增/移出错词库情况、当前 unit 进度统计。
+向用户报告：本轮每词正误（分 Type 1 / Type 2）、新增/移出错词库情况、当前进度统计。
 
 ---
 
-## 完整流程示例：`voc train 1`
+## 完整流程示例：`voc`
 
 1. Read `~/.openclaw/state/voc-exercise/state.json`（不存在则初始化）
-2. Read `vocabulary/units/Unit_1.md` → 解析词表
+2. Read `vocabulary/all_words.md` → 解析词表
 3. 抽词：cursor=0, wrong_bank 空 → 取前 10 词 `[mystery, mysterious, astronomer, asteroid, interstellar, speed, direction, increase, decrease, alien]`
-4. 生成 **Type 1**：10 道填空题，所有目标词列在选项中
+4. 生成 **Type 1**：10 道选择题（4 选 1）
 5. 生成 **Type 2**：10 个句子配对，10 个选项（含合理干扰）
 6. 将 `pending` 写入 state.json
 7. 输出两套题，提示用户作答
@@ -218,7 +224,7 @@ j. the results were surprising.
 
 ## 错误处理
 
-- **Unit 不存在**：提示有效范围 1–5
-- **state.json 损坏**：提示用户备份后运行 `voc reset <unit>` 或手动修复
+- **state.json 损坏**：提示用户备份后运行 `voc reset` 或手动修复
 - **vocabulary 文件缺失**：提示检查仓库路径
-- **无 pending 时收到 answer**：提示先运行 `voc train <unit>`
+- **无 pending 时收到 answer**：提示先运行 `voc`
+- **v1 状态格式**：提示版本已升级，运行 `voc reset` 清空旧数据
