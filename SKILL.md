@@ -26,6 +26,7 @@ metadata:
 4. 按规则抽词、生成两种题型
 5. 收集用户答案后，更新状态文件
 6. **禁止**跳过状态读写——所有进度必须持久化
+7. **禁止**在出题阶段显示任何中文释义——中文意思**只能**在回执（给出答案）时出现，出题时显示释义视为泄题
 
 ---
 
@@ -143,34 +144,35 @@ DIRECTIONS: Choose the correct word to complete each sentence.
 
 ## 题型二：句子配对题（Type 2 — Match Sentence Starters with Endings）
 
-**格式**：给出一组句子开头（sentence starters）和一组句子结尾（endings），用户将它们配对。
+**格式**：每道题是**两句配对**。**第一句**（编号项）用英文**描述或解释**某个目标词的含义，但**句中不出现该词**；**第二句**（字母选项）是一个**含有该目标词的短句**，目标词**斜体**标注。用户把每个第一句连到正确的第二句。
 
 **规则**：
-- 每个目标词生成 **1 个配对项**（要么是开头，要么是结尾）
-- 正确答案必须能唯一确定（每个开头只有一个正确结尾）
-- 配对内容需自然、符合语境
-- 干扰项通过合理混搭实现（所有选项列在一起，部分选项为干扰）
+- 每个目标词生成 **1 组配对（两句）**：
+  - **第二句（字母选项 / ending）**：含该目标词的自然短句，目标词用斜体 `*word*` 标注 —— **这是被考点**
+  - **第一句（编号项 / starter）**：用英文描述 / 解释该词的含义或使用情境，**不得出现该目标词本身**
+- 被考目标词**永远在第二句**，绝不出现在第一句
+- 第一句尽量基于词表的释义 / 例句改编，使描述准确指向**唯一**的目标词
+- 正确答案必须唯一确定（每个第一句只对应一个第二句）
+- 干扰项 = 本轮**其余目标词的第二句**；若本轮目标词不足，从全词表补充
+- 把所有第二句（正确项 + 干扰项）打乱后统一列为 a / b / c… 选项
 
 **输出格式**：
 ```
 题型二：句子配对题
 DIRECTIONS: Match each sentence starter with the correct ending.
+（第一句描述词义；第二句含被考词，斜体）
 
-选项：
-a. he holds the world record.
-b. he's a natural athlete.
-c. you manage to solve it.
-d. they might argue.
-e. it came from far away.
-f. scientists study them carefully.
-g. it moves very fast.
-h. we need better tools.
-i. she discovered something unusual.
-j. the results were surprising.
+选项（endings — 每项含一个目标词）：
+a. they *explore* space.
+b. it is an *asteroid*.
+c. it is very *mysterious*.
+d. he is an *astronomer*.
+...
 
-1. When two people disagree about something, ____
-2. If you work out a problem, ____
-3. Usain Bolt is the fastest runner ever; ____
+1. Astronauts travel to new places to learn about them; ____
+2. A small rocky object is orbiting the Sun; ____
+3. Nobody can explain where the object came from; ____
+4. He studies stars and planets for a living; ____
 ...
 ```
 
@@ -199,7 +201,24 @@ j. the results were surprising.
 ### 清空 pending 并写回状态文件。
 
 ### 回执
-向用户报告：本轮每词正误（分 Type 1 / Type 2）、新增/移出错词库情况、当前进度统计。
+向用户报告：
+1. **逐词结果**：每个目标词一行，包含 —— 单词 + **中文意思**（取自词表 `Meaning` 列）+ Type 1 正误 + Type 2 正误 + 正确答案（**答错时必须给出**）+ 去向（已掌握 / 错词库）
+2. 本轮新增 / 移出错词库的情况
+3. 当前进度统计（已掌握 / 错词库 / 剩余新词 / 总词数）
+
+> **必须**为每个词附上中文意思，方便用户对照记忆。
+
+**逐词结果格式示例**：
+```
+本轮结果：
+✅ explore（探索）        Type 1 ✓ | Type 2 ✓ → 已掌握
+❌ asteroid（小行星）     Type 1 ✓ | Type 2 ✗（正确答案：b）→ 进入错词库
+✅ mysterious（神秘的）   Type 1 ✓ | Type 2 ✓ → 已掌握
+❌ astronomer（天文学家） Type 1 ✗（正确答案：C）| Type 2 ✓ → 进入错词库
+...
+
+进度：已掌握 12 / 错词库 3 / 剩余新词 226 / 总计 241
+```
 
 ---
 
@@ -209,7 +228,7 @@ j. the results were surprising.
 2. Read `vocabulary/all_words.md` → 解析词表
 3. 抽词：cursor=0, wrong_bank 空 → 取前 10 词 `[mystery, mysterious, astronomer, asteroid, interstellar, speed, direction, increase, decrease, alien]`
 4. 生成 **Type 1**：10 道选择题（4 选 1）
-5. 生成 **Type 2**：10 个句子配对，10 个选项（含合理干扰）
+5. 生成 **Type 2**：10 组句子配对（第一句释义 + 第二句含被考目标词，斜体），10 个选项（含干扰）
 6. 将 `pending` 写入 state.json
 7. 输出两套题，提示用户作答
 
